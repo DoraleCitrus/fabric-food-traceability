@@ -1,0 +1,210 @@
+# ---------------------------------------------------------------------------
+# "configtx.yaml" - 用于 configtxgen 工具
+# ---------------------------------------------------------------------------
+Organizations:
+    # 排序组织定义
+    - &OrdererOrg
+        Name: OrdererOrg
+        ID: OrdererMSP
+        MSPDir: ./crypto-config/ordererOrganizations/example.com/msp
+        # 定义排序组织的策略
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererMSP.admin')"
+
+    # 供应商组织定义
+    - &Supplier
+        Name: SupplierMSP
+        ID: SupplierMSP
+        MSPDir: ./crypto-config/peerOrganizations/supplier.example.com/msp
+        # 定义该组织的策略
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('SupplierMSP.admin', 'SupplierMSP.peer', 'SupplierMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('SupplierMSP.admin', 'SupplierMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('SupplierMSP.admin')"
+            Endorsement: # 认可策略
+                Type: Signature
+                Rule: "OR('SupplierMSP.peer')"
+        # 定义锚节点 (Anchor Peer)
+        AnchorPeers:
+            - Host: peer0.supplier.example.com
+              Port: 7051 # Peer 的 gRPC 监听端口
+
+    # 加工厂组织定义
+    - &Processor
+        Name: ProcessorMSP
+        ID: ProcessorMSP
+        MSPDir: ./crypto-config/peerOrganizations/processor.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('ProcessorMSP.admin', 'ProcessorMSP.peer', 'ProcessorMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('ProcessorMSP.admin', 'ProcessorMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('ProcessorMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('ProcessorMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.processor.example.com
+              Port: 8051
+
+    # 零售商组织定义
+    - &Retailer
+        Name: RetailerMSP
+        ID: RetailerMSP
+        MSPDir: ./crypto-config/peerOrganizations/retailer.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('RetailerMSP.admin', 'RetailerMSP.peer', 'RetailerMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('RetailerMSP.admin', 'RetailerMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('RetailerMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('RetailerMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.retailer.example.com
+              Port: 9051
+              
+# 物流商组织定义
+    - &Logistics
+        Name: LogisticsMSP
+        ID: LogisticsMSP
+        MSPDir: ./crypto-config/peerOrganizations/logistics.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('LogisticsMSP.admin', 'LogisticsMSP.peer', 'LogisticsMSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('LogisticsMSP.admin', 'LogisticsMSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('LogisticsMSP.admin')"
+            Endorsement:
+                Type: Signature
+                Rule: "OR('LogisticsMSP.peer')"
+        AnchorPeers:
+            - Host: peer0.logistics.example.com
+              Port: 10051
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Application: &ApplicationDefaults
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        LifecycleEndorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+        Endorsement:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Endorsement"
+
+Orderer: &OrdererDefaults
+    OrdererType: solo # 使用 Solo 共识 (开发环境最简单)
+    Addresses:
+        - orderer.example.com:7050 # 排序节点地址
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    Capabilities:
+        <<: *ChannelCapabilities
+
+# ---------------------------------------------------------------------------
+# "Profiles" - 定义我们要生成的配置
+# ---------------------------------------------------------------------------
+Profiles:
+    # 配置文件一：创世区块 (系统通道)
+    FourOrgsOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Consortiums:
+            SampleConsortium: # 定义一个联盟，包含所有4个应用组织
+                Organizations:
+                    - *Supplier
+                    - *Processor
+                    - *Logistics
+                    - *Retailer
+    
+    # 配置文件二：应用通道
+    FourOrgsChannel:
+        Consortium: SampleConsortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Supplier
+                - *Processor
+                - *Logistics
+                - *Retailer
+            Capabilities:
+                <<: *ApplicationCapabilities

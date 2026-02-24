@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# "crypto-config.yaml" - 用于 cryptogen 工具
+# ---------------------------------------------------------------------------
+
+# 排序组织 (Orderer)
+OrdererOrgs:
+  - Name: Orderer                 # 排序组织名称
+    Domain: example.com           # 域名
+    Specs:
+      - Hostname: orderer         # 排序节点的主机名 (orderer.example.com)
+
+# 应用组织 (Peer)
+PeerOrgs:
+  # 组织一：供应商
+  - Name: Supplier
+    Domain: supplier.example.com
+    EnableNodeOUs: true           # 启用 "Node OUs"，这是 Fabric v1.4.3+ 推荐的
+    Template:
+      Count: 1                    # 该组织有 1 个 Peer 节点
+    Users:
+      Count: 1                    # 除了默认的 Admin，额外创建 1 个 User
+
+  # 组织二：加工厂
+  - Name: Processor
+    Domain: processor.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  # 组织三：物流商
+  - Name: Logistics
+    Domain: logistics.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  # 组织四：零售商
+  - Name: Retailer
+    Domain: retailer.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1

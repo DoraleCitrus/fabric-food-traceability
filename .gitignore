@@ -1,0 +1,45 @@
+# Node.js 依赖
+frontend/node_modules/
+api-server/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# 前端构建产物及环境变量
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# Fabric API 身份钱包
+api-server/wallet/
+
+# Fabric 网络证书
+network/crypto-config/
+
+# Fabric 网络构建产物
+network/channel-artifacts/
+*.block
+*.tx
+
+# 链码构建产物
+chaincode/*.tar.gz
+
+# IDE 配置及临时文件
+.vscode/
+.idea/
+*.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 临时文件
+*.log
+logs/
+
+# 个人备注和配置文件
+.gentr.json
+Start-and-Stop-Guide.md

@@ -1,0 +1,218 @@
+# ---------------------------------------------------------------------------
+# "docker-compose-net.yaml" - 启动我们的4组织 Fabric 网络
+# ---------------------------------------------------------------------------
+version: '3.7'
+
+# 定义网络
+networks:
+  food-net:
+    name: fabric_food_net
+
+# 定义数据卷 (用于持久化)
+volumes:
+  orderer.example.com:
+  peer0.supplier.example.com:
+  peer0.processor.example.com:
+  peer0.logistics.example.com:
+  peer0.retailer.example.com:
+
+services:
+  # ------------------- 排序节点 (Orderer) ---------------------
+  orderer.example.com:
+    container_name: orderer.example.com
+    image: hyperledger/fabric-orderer:2.2.10 # 使用 2.2.x 稳定版
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # TLS 相关配置
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # 创世区块
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/genesis.block
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/genesis.block
+      - ./crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+      - ./crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/:/var/hyperledger/orderer/tls
+      - orderer.example.com:/var/hyperledger/production/orderer # 持久化
+    ports:
+      - 7050:7050 # 排序服务端口
+    networks:
+      - food-net
+
+  # ------------------- 组织一：供应商 (Supplier) ---------------------
+  peer0.supplier.example.com:
+    container_name: peer0.supplier.example.com
+    image: hyperledger/fabric-peer:2.2.10
+    environment:
+      # Peer 核心配置
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_food_net # 链码容器加入此网络
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      # Peer 身份配置
+      - CORE_PEER_ID=peer0.supplier.example.com
+      - CORE_PEER_ADDRESS=peer0.supplier.example.com:7051 # gRPC 服务地址
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.supplier.example.com:7052 # 链码监听地址
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.supplier.example.com:7051 # 自己的 Gossip 入口
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.supplier.example.com:7051
+      - CORE_PEER_LOCALMSPID=SupplierMSP
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/supplier.example.com/peers/peer0.supplier.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/supplier.example.com/peers/peer0.supplier.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.supplier.example.com:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 7051:7051 # 供应商 Peer 端口
+    networks:
+      - food-net
+
+  # ------------------- 组织二：加工厂 (Processor) ---------------------
+  peer0.processor.example.com:
+    container_name: peer0.processor.example.com
+    image: hyperledger/fabric-peer:2.2.10
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_food_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.processor.example.com
+      - CORE_PEER_ADDRESS=peer0.processor.example.com:8051 # 注意端口!!
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.processor.example.com:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.processor.example.com:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.processor.example.com:8051
+      - CORE_PEER_LOCALMSPID=ProcessorMSP
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/processor.example.com/peers/peer0.processor.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/processor.example.com/peers/peer0.processor.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.processor.example.com:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 8051:8051 # 加工厂 Peer 端口
+    networks:
+      - food-net
+
+  # ------------------- 组织三：物流商 (Logistics) ---------------------
+  peer0.logistics.example.com:
+    container_name: peer0.logistics.example.com
+    image: hyperledger/fabric-peer:2.2.10
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_food_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.logistics.example.com
+      - CORE_PEER_ADDRESS=peer0.logistics.example.com:9051 # 注意端口!!
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.logistics.example.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.logistics.example.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.logistics.example.com:9051
+      - CORE_PEER_LOCALMSPID=LogisticsMSP
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/logistics.example.com/peers/peer0.logistics.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/logistics.example.com/peers/peer0.logistics.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.logistics.example.com:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 9051:9051 # 物流商 Peer 端口
+    networks:
+      - food-net
+
+  # ------------------- 组织四：零售商 (Retailer) ---------------------
+  peer0.retailer.example.com:
+    container_name: peer0.retailer.example.com
+    image: hyperledger/fabric-peer:2.2.10
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_food_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.retailer.example.com
+      - CORE_PEER_ADDRESS=peer0.retailer.example.com:10051 # 注意端口!!
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.retailer.example.com:10052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.retailer.example.com:10051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.retailer.example.com:10051
+      - CORE_PEER_LOCALMSPID=RetailerMSP
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./crypto-config/peerOrganizations/retailer.example.com/peers/peer0.retailer.example.com/msp:/etc/hyperledger/fabric/msp
+      - ./crypto-config/peerOrganizations/retailer.example.com/peers/peer0.retailer.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.retailer.example.com:/var/hyperledger/production
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    ports:
+      - 10051:10051 # 零售商 Peer 端口
+    networks:
+      - food-net
+
+  # ------------------- CLI (命令行工具) ---------------------
+  # 我们将使用这个容器来执行所有 Fabric 命令 (创建通道, 部署链码等)
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:2.2.10
+    tty: true # 保持容器运行
+    stdin_open: true # 保持容器运行
+    environment:
+      - GOPATH=/opt/gopath
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - FABRIC_LOGGING_SPEC=INFO
+      # 默认设置为供应商组织
+      - CORE_PEER_ID=cli
+      - CORE_PEER_ADDRESS=peer0.supplier.example.com:7051
+      - CORE_PEER_LOCALMSPID=SupplierMSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/supplier.example.com/peers/peer0.supplier.example.com/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/supplier.example.com/users/Admin@supplier.example.com/msp
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    volumes:
+      - /var/run/:/host/var/run/
+      # 挂载 crypto-config 和 channel-artifacts
+      - ./crypto-config:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+      - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
+      # 挂载链码 (为阶段三做准备)
+      - ../chaincode:/opt/gopath/src/github.com/chaincode
+    networks:
+      - food-net
+    # 依赖于所有节点都已启动
+    depends_on:
+      - orderer.example.com
+      - peer0.supplier.example.com
+      - peer0.processor.example.com
+      - peer0.logistics.example.com
+      - peer0.retailer.example.com

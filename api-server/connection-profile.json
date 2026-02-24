@@ -1,0 +1,140 @@
+{
+    "name": "fabric-food-net",
+    "version": "1.0.0",
+    "client": {
+        "organization": "Supplier",
+        "connection": {
+            "timeout": {
+                "peer": {
+                    "endorser": "300"
+                }
+            }
+        }
+    },
+    "channels": {
+        "foodchannel": {
+            "orderers": [
+                "orderer.example.com"
+            ],
+            "peers": {
+                "peer0.supplier.example.com": {
+                    "endorsingPeer": true,
+                    "chaincodeQuery": true,
+                    "ledgerQuery": true
+                },
+                "peer0.processor.example.com": {
+                    "endorsingPeer": true,
+                    "chaincodeQuery": true,
+                    "ledgerQuery": true
+                },
+                "peer0.logistics.example.com": {
+                    "endorsingPeer": true,
+                    "chaincodeQuery": true,
+                    "ledgerQuery": true
+                },
+                "peer0.retailer.example.com": {
+                    "endorsingPeer": true,
+                    "chaincodeQuery": true,
+                    "ledgerQuery": true
+                }
+            }
+        }
+    },
+    "organizations": {
+        "OrdererOrg": {
+            "mspid": "OrdererMSP",
+            "orderers": [
+                "orderer.example.com"
+            ],
+            "peers": [],
+            "tlsCACerts": {
+                "path": "../network/crypto-config/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+            }
+        },
+        "Supplier": {
+            "mspid": "SupplierMSP",
+            "peers": [
+                "peer0.supplier.example.com"
+            ],
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/supplier.example.com/msp/tlscacerts/tlsca.supplier.example.com-cert.pem"
+            }
+        },
+        "Processor": {
+            "mspid": "ProcessorMSP",
+            "peers": [
+                "peer0.processor.example.com"
+            ],
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/processor.example.com/msp/tlscacerts/tlsca.processor.example.com-cert.pem"
+            }
+        },
+        "Logistics": {
+            "mspid": "LogisticsMSP",
+            "peers": [
+                "peer0.logistics.example.com"
+            ],
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/logistics.example.com/msp/tlscacerts/tlsca.logistics.example.com-cert.pem"
+            }
+        },
+        "Retailer": {
+            "mspid": "RetailerMSP",
+            "peers": [
+                "peer0.retailer.example.com"
+            ],
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/retailer.example.com/msp/tlscacerts/tlsca.retailer.example.com-cert.pem"
+            }
+        }
+    },
+    "orderers": {
+        "orderer.example.com": {
+            "url": "grpcs://localhost:7050",
+            "grpcOptions": {
+                "ssl-target-name-override": "orderer.example.com"
+            },
+            "tlsCACerts": {
+                "path": "../network/crypto-config/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+            }
+        }
+    },
+    "peers": {
+        "peer0.supplier.example.com": {
+            "url": "grpcs://localhost:7051",
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.supplier.example.com"
+            },
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/supplier.example.com/msp/tlscacerts/tlsca.supplier.example.com-cert.pem"
+            }
+        },
+        "peer0.processor.example.com": {
+            "url": "grpcs://localhost:8051",
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.processor.example.com"
+            },
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/processor.example.com/msp/tlscacerts/tlsca.processor.example.com-cert.pem"
+            }
+        },
+        "peer0.logistics.example.com": {
+            "url": "grpcs://localhost:9051",
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.logistics.example.com"
+            },
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/logistics.example.com/msp/tlscacerts/tlsca.logistics.example.com-cert.pem"
+            }
+        },
+        "peer0.retailer.example.com": {
+            "url": "grpcs://localhost:10051",
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.retailer.example.com"
+            },
+            "tlsCACerts": {
+                "path": "../network/crypto-config/peerOrganizations/retailer.example.com/msp/tlscacerts/tlsca.retailer.example.com-cert.pem"
+            }
+        }
+    }
+}
